@@ -125,7 +125,7 @@ export default function UI({ ffmpeg, logs }) {
 						<>
 							<CardContent>
 								<h3 className='text-lg font-semibold mb-4'>Filters</h3>
-								<ScrollArea className='h-[300px] pr-4'>
+								<ScrollArea className='h-[450px] pr-4'>
 									<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto'>
 										{Object.keys(filtersList).map((filter) => (
 											<div
@@ -153,36 +153,16 @@ export default function UI({ ffmpeg, logs }) {
 									className='mt-4 w-full'>
 									{isProcessing ? "Processing..." : "Apply Filters"}
 								</Button>
+								<Button
+									onClick={() => setShowLog(!showLog)}
+									className='mt-4 border-black'
+									variant='outline'>
+									{showLog ? "Hide Log" : "Show Log"}
+								</Button>
 							</CardFooter>
 						</>
 					)}
 				</Card>
-				<Button
-					onClick={() => setShowLog(!showLog)}
-					className='mt-4'>
-					{showLog ? "Hide Log" : "Show Log"}
-				</Button>
-				{showLog && (
-					<Card className='backdrop-blur-sm drop-shadow-lg bg-background/80 dark:bg-background/40 mt-4'>
-						<CardHeader>
-							<CardTitle className='text-2xl font-semibold text-center'>FFmpeg Logs</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<ScrollArea className='h-[200px] pr-4'>
-								<div className='space-y-2'>
-									{logs.map((log, index) => (
-										<div
-											key={index}
-											className='text-sm'>
-											{log}
-										</div>
-									))}
-									<div ref={logEndRef} />
-								</div>
-							</ScrollArea>
-						</CardContent>
-					</Card>
-				)}
 			</div>
 			{file && (
 				<div className='md:col-span-1 w-1/2'>
@@ -217,6 +197,28 @@ export default function UI({ ffmpeg, logs }) {
 							</div>
 						</CardContent>
 					</Card>
+
+					{showLog && (
+						<Card className='backdrop-blur-sm drop-shadow-lg bg-background/80 dark:bg-background/40 mt-4'>
+							<CardHeader>
+								<CardTitle className='text-2xl font-semibold text-center'>FFmpeg Logs</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<ScrollArea className='h-[200px] pr-4'>
+									<div className='space-y-2'>
+										{logs.map((log, index) => (
+											<div
+												key={index}
+												className='text-sm'>
+												{log}
+											</div>
+										))}
+										<div ref={logEndRef} />
+									</div>
+								</ScrollArea>
+							</CardContent>
+						</Card>
+					)}
 				</div>
 			)}
 		</div>
