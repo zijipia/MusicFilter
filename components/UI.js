@@ -166,7 +166,7 @@ export default function UI({ ffmpeg, logs }) {
 			</div>
 			{file && (
 				<div className='md:col-span-1 w-1/2'>
-					<Card className='sticky top-4 drop-shadow-lg backdrop-blur-sm bg-background/80 dark:bg-background/40'>
+					<Card className='top-4 drop-shadow-lg backdrop-blur-sm bg-background/80 dark:bg-background/40'>
 						<CardHeader>
 							<CardTitle className='text-2xl font-semibold text-center'>Output Audio</CardTitle>
 						</CardHeader>
