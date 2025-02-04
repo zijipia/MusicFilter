@@ -9,6 +9,7 @@ import Loading from "./Loading";
 export default function AudioProcessor() {
 	const [ffmpeg, setFfmpeg] = useState(null);
 	const [loaded, setLoaded] = useState(false);
+	const [logs, setLogs] = useState([]);
 
 	useEffect(() => {
 		const loadFFmpeg = async () => {
@@ -17,6 +18,7 @@ export default function AudioProcessor() {
 
 			ffmpegInstance.on("log", ({ message }) => {
 				console.log(`[ FFMPEG LOG ] ${message}`);
+				setLogs((prevLogs) => [...prevLogs, message]);
 			});
 
 			await ffmpegInstance.load({
@@ -33,5 +35,10 @@ export default function AudioProcessor() {
 
 	if (!loaded) return <Loading />;
 
-	return <UI ffmpeg={ffmpeg} />;
+	return (
+		<UI
+			ffmpeg={ffmpeg}
+			logs={logs}
+		/>
+	);
 }

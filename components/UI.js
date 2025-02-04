@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { fetchFile } from "@ffmpeg/util";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,13 +57,21 @@ const filtersList = {
 	Silence_Remove: "silenceremove=1:0:-50dB",
 };
 
-export default function UI({ ffmpeg }) {
+export default function UI({ ffmpeg, logs }) {
 	const [file, setFile] = useState(null);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [filters, setFilters] = useState([]);
 	const audioRef = useRef();
 	const originalAudioRef = useRef();
 	const audioUrl = useRef("");
+	const [showLog, setShowLog] = useState(false);
+	const logEndRef = useRef(null);
+
+	useEffect(() => {
+		if (logEndRef.current) {
+			logEndRef.current.scrollIntoView({ behavior: "smooth" });
+		}
+	}, [logs]);
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
@@ -149,6 +157,32 @@ export default function UI({ ffmpeg }) {
 						</>
 					)}
 				</Card>
+				<Button
+					onClick={() => setShowLog(!showLog)}
+					className='mt-4'>
+					{showLog ? "Hide Log" : "Show Log"}
+				</Button>
+				{showLog && (
+					<Card className='backdrop-blur-sm drop-shadow-lg bg-background/80 dark:bg-background/40 mt-4'>
+						<CardHeader>
+							<CardTitle className='text-2xl font-semibold text-center'>FFmpeg Logs</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ScrollArea className='h-[200px] pr-4'>
+								<div className='space-y-2'>
+									{logs.map((log, index) => (
+										<div
+											key={index}
+											className='text-sm'>
+											{log}
+										</div>
+									))}
+									<div ref={logEndRef} />
+								</div>
+							</ScrollArea>
+						</CardContent>
+					</Card>
+				)}
 			</div>
 			{file && (
 				<div className='md:col-span-1 w-1/2'>
