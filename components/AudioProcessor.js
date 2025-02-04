@@ -13,7 +13,7 @@ export default function AudioProcessor() {
 	useEffect(() => {
 		const loadFFmpeg = async () => {
 			const ffmpegInstance = new FFmpeg();
-			const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.2/dist/esm";
+			const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
 
 			ffmpegInstance.on("log", ({ message }) => {
 				console.log(`[ FFMPEG LOG ] ${message}`);

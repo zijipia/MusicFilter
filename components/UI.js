@@ -6,13 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "./ui/scroll-area";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 
-const bass = (g) => `bass=g=${g}:f=110:w=0.3`;
+import { BiUpload } from "react-icons/bi";
 
-const object = {
-	Bassboost_Low: bass(15),
-	Bassboost: bass(20),
-	Bassboost_High: bass(30),
+const filtersList = {
+	Bassboost_Low: "bass=g=15:f=110:w=0.3",
+	Bassboost: "bass=g=20:f=110:w=0.3",
+	Bassboost_High: "bass=g=30:f=110:w=0.3",
 	"8D": "apulsator=hz=0.09",
 	Daycore: "aresample=48000,asetrate=48000*0.8",
 	Nightcore: "aresample=48000,asetrate=48000*1.25",
@@ -49,150 +58,132 @@ const object = {
 };
 
 export default function UI({ ffmpeg }) {
-	const [isUploading, setIsUploading] = useState(false);
-	const [isUploaded, setIsUploaded] = useState(false);
-	const base64File = useRef("");
-	const [file, setFile] = useState();
-	const filters = useRef([]);
-	const audioRef2 = useRef();
-	const audioRef = useRef("");
-	const [encoding, setEncoding] = useState(false);
+	const [file, setFile] = useState(null);
+	const [isProcessing, setIsProcessing] = useState(false);
+	const [filters, setFilters] = useState([]);
+	const audioRef = useRef();
+	const originalAudioRef = useRef();
 	const audioUrl = useRef("");
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		if (!file) return alert("Please upload an MP3 or OGG file.");
+		setIsProcessing(true);
 
-		if (!file) return;
-
-		if (!["audio/ogg", "audio/mpeg"].includes(file.type))
-			return alert("Error: The file should be mp3 or ogg");
-
-		setIsUploading(true);
-
-		const fileData = await fetch("https://httpbin.org/post", {
-			method: "POST",
-			body: file,
-			headers: {
-				"content-type": file.type,
-				"content-length": `${file.size}`,
-			},
-		});
-
-		const fileJson = await fileData.json();
-
-		const base64 = fileJson.data;
-
-		base64File.current = base64;
-
-		setIsUploaded(true);
-
-		const blob = await (await fetch(base64File.current)).blob();
-
-		const objectUrl = URL.createObjectURL(blob);
-
-		audioRef2.current.src = objectUrl;
+		const objectUrl = URL.createObjectURL(file);
+		originalAudioRef.current.src = objectUrl;
 		audioUrl.current = objectUrl;
+		setIsProcessing(false);
 	};
 
 	const handleEncode = async () => {
-		if (!ffmpeg) return;
-		setEncoding(true);
+		if (!ffmpeg || filters.length === 0) return;
+		setIsProcessing(true);
 
-		const objectUrl = audioUrl.current;
+		await ffmpeg.writeFile("input.mp3", await fetchFile(audioUrl.current));
+		await ffmpeg.exec(["-i", "input.mp3", "-af", filters.join(","), "output.mp3"]);
 
-		await ffmpeg.writeFile("input.mp3", await fetchFile(objectUrl));
-
-		await ffmpeg.exec([
-			"-i",
-			"input.mp3",
-			"-af",
-			filters.current.join(","),
-			"ffmpeg_output_process.mp3",
-		]);
-
-		const data = await ffmpeg.readFile("ffmpeg_output_process.mp3");
-
+		const data = await ffmpeg.readFile("output.mp3");
 		const url = URL.createObjectURL(new Blob([data.buffer], { type: "audio/mp3" }));
-
 		audioRef.current.src = url;
-
-		setEncoding(false);
+		setIsProcessing(false);
 	};
 
 	return (
-		<div className='min-h-screen bg-gray-900 p-4'>
-			{isUploading ? (
-				isUploaded ? (
-					<div className='space-y-4'>
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-							<div className='p-4 rounded-lg border-4 border-white'>
-								<h2 className='text-white text-2xl font-bold mb-4'>Editing {file.name}</h2>
-								<audio
-									controls
-									ref={audioRef}
-									className='w-full mb-4'
+		<div className='min-h-screen flex items-center justify-center gap-6 p-6'>
+			<div className='md:col-span-2 space-y-6 w-1/2'>
+				<Card className='backdrop-blur-sm drop-shadow-lg bg-background/80 dark:bg-background/40'>
+					<h2 className='text-2xl font-semibold text-center mt-4 mb-4'>Audio Editor</h2>
+					<CardHeader>
+						<div className='relative'>
+							<form
+								onSubmit={handleSubmit}
+								className=''>
+								<Input
+									type='file'
+									accept='audio/ogg,audio/mpeg'
+									onChange={(e) => setFile(e.target.files[0])}
 								/>
-								<h3 className='text-white text-center mb-2'>Original</h3>
-								<audio
-									controls
-									ref={audioRef2}
-									className='w-full'
-								/>
-							</div>
-							<div className='p-4 rounded-lg border-4 border-white overflow-auto max-h-96'>
-								{Object.keys(object).map((val) => (
-									<div
-										key={val}
-										className='flex items-center space-x-4 py-2'>
-										<Switch
-											id={val}
-											onCheckedChange={(checked) => {
-												if (checked) {
-													filters.current.push(object[val]);
-												} else {
-													filters.current = filters.current.filter((v) => v !== object[val]);
-												}
-											}}
-										/>
-										<Label
-											htmlFor={val}
-											className='text-white'>
-											{val.replace("_", " ")}
-										</Label>
+								<Button
+									type='submit'
+									className='absolute right-0 top-1/2 transform -translate-y-1/2'>
+									<BiUpload />
+									Upload
+								</Button>
+							</form>
+						</div>
+					</CardHeader>
+					{file && (
+						<>
+							<CardContent>
+								<h3 className='text-lg font-semibold mb-4'>Filters</h3>
+								<ScrollArea className='h-[300px] pr-4'>
+									<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto'>
+										{Object.keys(filtersList).map((filter) => (
+											<div
+												key={filter}
+												className='flex items-center space-x-3 mb-2'>
+												<Switch
+													onCheckedChange={(checked) => {
+														setFilters(
+															checked
+																? [...filters, filtersList[filter]]
+																: filters.filter((f) => f !== filtersList[filter]),
+														);
+													}}
+												/>
+												<Label>{filter}</Label>
+											</div>
+										))}
 									</div>
-								))}
+								</ScrollArea>
+							</CardContent>
+							<CardFooter>
+								<Button
+									onClick={handleEncode}
+									disabled={isProcessing}
+									className='mt-4 w-full'>
+									{isProcessing ? "Processing..." : "Apply Filters"}
+								</Button>
+							</CardFooter>
+						</>
+					)}
+				</Card>
+			</div>
+			{file && (
+				<div className='md:col-span-1 w-1/2'>
+					<Card className='sticky top-4 drop-shadow-lg backdrop-blur-sm bg-background/80 dark:bg-background/40'>
+						<CardHeader>
+							<CardTitle className='text-2xl font-semibold text-center'>Output Audio</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className='space-y-6'>
+								<div className='justify-center text-center'>
+									<Card className='mt-2 mb-2 mr-2 ml-2'>
+										<div className='mt-6 mb-6 mr-6 ml-6'>
+											<h3 className='text-lg font-semibold mb-4'>Original Audio</h3>
+											<audio
+												controls
+												ref={originalAudioRef}
+												className='w-full mt-2'
+											/>
+										</div>
+									</Card>
+									<Card className='mt-2 mb-2 mr-2 ml-2'>
+										<div className='mt-6 mb-6 mr-6 ml-6'>
+											<h3 className='text-lg font-semibold mb-4'>Processed Audio</h3>
+											<audio
+												controls
+												ref={audioRef}
+												className='w-full mt-2'
+											/>
+										</div>
+									</Card>
+								</div>
 							</div>
-						</div>
-						<div className='flex justify-center'>
-							<Button
-								onClick={handleEncode}
-								disabled={encoding}>
-								{encoding ? "Encoding..." : "Encode"}
-							</Button>
-						</div>
-					</div>
-				) : (
-					<div className='flex justify-center items-center h-64'>
-						<div className='animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-white'></div>
-					</div>
-				)
-			) : (
-				<form
-					onSubmit={handleSubmit}
-					className='max-w-sm mx-auto'>
-					<div className='space-y-4'>
-						<Input
-							type='file'
-							onChange={(e) => setFile(e.target.files[0])}
-							accept='audio/ogg,audio/mpeg'
-						/>
-						<Button
-							type='submit'
-							className='w-full'>
-							Submit
-						</Button>
-					</div>
-				</form>
+						</CardContent>
+					</Card>
+				</div>
 			)}
 		</div>
 	);
